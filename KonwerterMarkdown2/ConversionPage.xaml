@@ -1,0 +1,27 @@
+<Page x:Class="KonwerterMarkdown2.ConversionPage"
+      xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+      xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+      Title="ConversionPage">
+    <Grid Background="#E6F4E6">
+        <Grid.RowDefinitions>
+            <RowDefinition Height="Auto"/>
+            <RowDefinition Height="*"/>
+            <RowDefinition Height="Auto"/>
+        </Grid.RowDefinitions>
+        <Grid.ColumnDefinitions>
+            <ColumnDefinition Width="*"/>
+        </Grid.ColumnDefinitions>
+
+        <TextBlock Grid.Row="0" Grid.Column="0" Text="Directory Conversion"
+                   FontSize="24" FontWeight="Bold" Foreground="#333"
+                   HorizontalAlignment="Center" Margin="0,0,0,20"/>
+
+        <StackPanel Grid.Row="1" HorizontalAlignment="Center" Margin="10">
+            <Button Content="Convert Directory to HTML" Width="200" Click="ConvertDirectoryToHtml_Click"/>
+            <Button Content="Convert Directory to Markdown" Width="200" Click="ConvertDirectoryToMarkdown_Click"/>
+            <Button Content="Cancel Operation" Width="200" Click="CancelOperation_Click"/>
+        </StackPanel>
+
+        <ProgressBar Name="ProgressBar" Grid.Row="2" Height="20" Margin="10,0,10,20" VerticalAlignment="Bottom"/>
+    </Grid>
+</Page>

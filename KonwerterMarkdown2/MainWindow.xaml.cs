@@ -3,16 +3,15 @@ using System.IO;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using System.Windows.Controls;
-using Markdig;
 using Microsoft.Win32;
-using ReverseMarkdown;
+using ClassLibrary2;
 
-namespace MarkdownHtmlConverter
+namespace KonwerterMarkdown2
 {
     public partial class MainWindow : Window
     {
         private CancellationTokenSource _cancellationTokenSource;
+        private Class1 _converter = new Class1();
 
         public MainWindow()
         {
@@ -24,7 +23,7 @@ namespace MarkdownHtmlConverter
             string markdown = MarkdownTextBox.Text;
             if (!string.IsNullOrEmpty(markdown))
             {
-                string html = Markdown.ToHtml(markdown);
+                string html = _converter.ConvertMarkdownToHtml(markdown);
                 HtmlTextBox.Text = html;
             }
             else
@@ -38,14 +37,7 @@ namespace MarkdownHtmlConverter
             string html = HtmlTextBox.Text;
             if (!string.IsNullOrEmpty(html))
             {
-                var config = new ReverseMarkdown.Config
-                {
-                    GithubFlavored = true,
-                    RemoveComments = true,
-                    SmartHrefHandling = true
-                };
-                var converter = new ReverseMarkdown.Converter(config);
-                string markdown = converter.Convert(html);
+                string markdown = _converter.ConvertHtmlToMarkdown(html);
                 MarkdownTextBox.Text = markdown;
             }
             else
@@ -105,37 +97,21 @@ namespace MarkdownHtmlConverter
             }
         }
 
-        private async void ConvertDirectoryToHtml_Click(object sender, RoutedEventArgs e)
+        public async void ConvertDirectoryToHtml_Click(object sender, RoutedEventArgs e)
         {
             var folderDialog = new System.Windows.Forms.FolderBrowserDialog();
             if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 _cancellationTokenSource = new CancellationTokenSource();
-                string[] files = Directory.GetFiles(folderDialog.SelectedPath, "*.md");
-                ProgressBar.Maximum = files.Length;
-                ProgressBar.Value = 0;
+                var progress = new Progress<int>(value => ProgressBar.Value = value);
 
                 try
                 {
                     await Task.Run(() =>
                     {
-                        foreach (var file in files)
-                        {
-                            _cancellationTokenSource.Token.ThrowIfCancellationRequested();
-                            string markdown = File.ReadAllText(file);
-                            if (!string.IsNullOrEmpty(markdown))
-                            {
-                                string html = Markdown.ToHtml(markdown);
-                                string htmlFile = Path.ChangeExtension(file, ".html");
-                                File.WriteAllText(htmlFile, html);
-                            }
-                            else
-                            {
-                                Dispatcher.Invoke(() => MessageBox.Show($"File {file} is empty."));
-                            }
-                            Dispatcher.Invoke(() => ProgressBar.Value += 1);
-                        }
+                        _converter.ConvertDirectoryToHtml(folderDialog.SelectedPath, progress, _cancellationTokenSource.Token);
                     }, _cancellationTokenSource.Token);
+                    MessageBox.Show("Directory conversion to HTML completed.");
                 }
                 catch (OperationCanceledException)
                 {
@@ -144,45 +120,21 @@ namespace MarkdownHtmlConverter
             }
         }
 
-        private async void ConvertDirectoryToMarkdown_Click(object sender, RoutedEventArgs e)
+        public async void ConvertDirectoryToMarkdown_Click(object sender, RoutedEventArgs e)
         {
             var folderDialog = new System.Windows.Forms.FolderBrowserDialog();
             if (folderDialog.ShowDialog() == System.Windows.Forms.DialogResult.OK)
             {
                 _cancellationTokenSource = new CancellationTokenSource();
-                string[] files = Directory.GetFiles(folderDialog.SelectedPath, "*.html");
-                ProgressBar.Maximum = files.Length;
-                ProgressBar.Value = 0;
+                var progress = new Progress<int>(value => ProgressBar.Value = value);
 
                 try
                 {
                     await Task.Run(() =>
                     {
-                        var config = new ReverseMarkdown.Config
-                        {
-                            GithubFlavored = true,
-                            RemoveComments = true,
-                            SmartHrefHandling = true
-                        };
-                        var converter = new ReverseMarkdown.Converter(config);
-
-                        foreach (var file in files)
-                        {
-                            _cancellationTokenSource.Token.ThrowIfCancellationRequested();
-                            string html = File.ReadAllText(file);
-                            if (!string.IsNullOrEmpty(html))
-                            {
-                                string markdown = converter.Convert(html);
-                                string mdFile = Path.ChangeExtension(file, ".md");
-                                File.WriteAllText(mdFile, markdown);
-                            }
-                            else
-                            {
-                                Dispatcher.Invoke(() => MessageBox.Show($"File {file} is empty."));
-                            }
-                            Dispatcher.Invoke(() => ProgressBar.Value += 1);
-                        }
+                        _converter.ConvertDirectoryToMarkdown(folderDialog.SelectedPath, progress, _cancellationTokenSource.Token);
                     }, _cancellationTokenSource.Token);
+                    MessageBox.Show("Directory conversion to Markdown completed.");
                 }
                 catch (OperationCanceledException)
                 {
@@ -191,9 +143,15 @@ namespace MarkdownHtmlConverter
             }
         }
 
-        private void CancelOperation_Click(object sender, RoutedEventArgs e)
+        public void CancelOperation_Click(object sender, RoutedEventArgs e)
         {
             _cancellationTokenSource?.Cancel();
+        }
+
+        public void OpenConversionPage_Click(object sender, RoutedEventArgs e)
+        {
+            var conversionPage = new ConversionPage(this);
+            MainFrame.Navigate(conversionPage);
         }
     }
 }
